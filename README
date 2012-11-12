@@ -1,0 +1,120 @@
+Linux Dell Repository to Debian repository        
+------------------------------------------
+
+Author: Claudio Cesar Sanchez Tejeda <demonccc@gmail.com>
+
+Description: 
+============
+
+All the Linux Dell firmware implementations are created to be used on rpm based Linux distributions. 
+This tool downloads the firmwares, firmware-tools, ie modules and the necessaries libraries from the Dell OMSA repository (all of them are rpm packages) and port them to Debian packages (the generated packages can be used on Debian based distributions, like Ubuntu).
+
+Installation:
+=============
+
+# git clone http://git@github.com:demonccc/lnxDellRepo2deb.git
+
+Or
+
+# wget https://github.com/demonccc/lnxDellRepo2deb/archive/master.tar.gz -q -O-  | tar xzf -
+# mv lnxDellRepo2deb-master lnxDellRepo2deb
+
+Usage:
+======
+
+You need to edit the configuration files in order to download only the files that you need. When you have edited the configuration files as you needs, you should run 'bin/run.sh'.
+
+The firmware packages, firmware tools packages and the ie-modules packages will be downloaded from the Dell YUM repo and ported to Debian packages. The packages are located in packages/rpm and packages/deb respectively.
+
+You can upload the generated packages to your debian repository or copy them where you need to install the firmware tools and update the firmwares. If you need to sign a package, you can use the 'extras/signdeb.sh' script (Usage:  'extras/signdeb.sh package.deb' or 'extras/signdeb.sh package_directory'). You need to run 'extras/signdeb.sh' as the user that have configured the gpg key that is used to sign the Debian repo. 
+
+Configuration files:
+====================
+
+* conf/config: By editing this file you can:
+ - customize the user and the email that will be added as mainteiner package.
+ - configure the YUM Dell url. You should change it when a new quarter release is avalable.
+ - customize the suffix of the package version of the generated packages.
+ - configure the paths. Generally you only need to edit the `MAIN_PATH` variable.
+
+* conf/systemids: This file contain the system ids of the servers which you need to update their firmwares. The format of this file is:
+      ven_0x1028_dev_SYSTEMID PRODUCT_NAME
+  You can find the SYSTEMID and the PRODUCT_NAME by running the 'smbios-sys-info' command. Example:
+      # smbios-sys-info
+      Libsmbios version:      2.2.26
+      Product Name:           PowerEdge T310
+      Vendor:                 Dell Inc.
+      BIOS Version:           1.0.2
+      System ID:              0x02A4
+      Service Tag:            XXXXXXX
+      Express Service Code:   XXXXXXXXXXX
+      Asset Tag:              
+      Property Ownership Tag: 
+  In this example, the PRODUCT_NAME is PowerEdge_T310 and the SYSTEMID is 0x02A4.
+
+* conf/firmwares_blacklist: In this file, you need to put the firmwares that you don't want to download. You can run 'update_firmware -a' and match the firmware id of the firmwares that you don't need and put them in this file.
+
+* conf/firmware_tools_blacklist: This file contain the packages that will not be downladed and ported.
+
+How to upgrade the firmware using the generated packages:
+=========================================================
+
+Requistes:
+----------
+
+- You need to have installed OMSA from the Dell Debian repo: http://linux.dell.com/repo/community/deb
+
+- The libsmbios2 library and the smbios tools from the Ubuntu/Debian repo and the Dell repo doesn't work correctly with the ported packages. You need to install the libsmbios library and the smbios tools ported from the rpm packages:
+
+    # apt-get install libsmbios python-smbios smbios-utils smbios-utils-bin smbios-utils-python
+
+  Some times you need to remove the libsmbios2 package, install the new smbios pacakges and reinstall OMSA.
+
+- You need to install the generated packages of firmware tools and the ie-modules:
+
+    # apt-get install dell-ft-ie-interface firmware-addon-dell firmware-extract firmware-tools dell-ft-install libipmi0 libsmal0
+
+    # apt-get install dell-ie-bios dell-ie-nic-intel dell-ie-idrac7 dell-ie-nic-qlogic dell-ie-imc dell-ie-nitrogen dell-ie-maser dell-ie-oxygen dell-ie-maser-diags dell-ie-pcissd dell-ie-maser-dp dell-ie-ps dell-ie-maser-inv-lcl dell-ie-rac-5 dell-ie-maser-usc dell-ie-sas dell-ie-nic-broadcom dell-ie-tape-ibm dell-ie-nic-emulex dell-ie-tape-quantum
+
+Update process:
+---------------
+
+First you need to install the firmware packages. If you have uploaded the packages to a Debian repo the task is very simple:
+
+   # for firmware in $(bootstrap_firmware -a); do apt-get install $firmware; done
+
+If not, you need to run 'bootstrap_firmware -a' and match the firmware ids showed in the command output with the provides section of the firmware packages generated and install them.
+
+Once you have the firmwares packages installed, you can run 'update_firmware -y'.
+
+Some workarounds to issues:
+---------------------------
+
+- If the update_firmware tool returns the following messages: 
+
+  * "Inventory Failure: Secure Copy Failure - The Secure copy function has failed"
+
+  * "doDepCheck failed"
+
+  * "… mount: block device /dev/secmasupd-SECUPD is write-protected … /bin/cp: cannot create regular file …"
+
+  You need to be sure that the virtual media is detach. To detach it you can run: 'racadm config -g cfgRacVirtual -o cfgVirMediaAttached 0'. If it is detached or you detached it and the message still appears, try to restart the iDRAC/RAC by running: 'racadm racreset hard'. If it still does not work you can run: 'racadm config -g cfgRacVirtual -o cfgLCdriveEnable 0' and try again (when you have finished and cfgLCdriveEnable was set to 1 before you changed it, remember to run: 'racadm config -g cfgRacVirtual -o cfgLCdriveEnable 1' to restore the previous value). Try two times more, if not, you should uninstall the package of the failed firmware.
+
+- When you update the BIOS, some times the tool finishes with a error by showing a message that you need reboot the system. Reboot the server and run: 'update_firmware -y' again in order to update the remaining firmwares.
+
+- Some times you need to run 'update_firmware -y' several times in order to update the RAC/iDRAC firmware. If you have issues by upgrading it, restart the RAC/iDRAC and try again ('racadm racreset hard').
+
+License:
+========
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.

@@ -1,0 +1,33 @@
+#############################################################
+#                                                           #
+# Configuration file                                        #
+#                                                           #
+# Author: Claudio Cesar Sanchez Tejeda <demonccc@gmail.com> #
+#                                                           #
+#############################################################
+
+# User settings
+
+EMAIL="mail@example.com"
+USER="XXX"
+
+# URL settings
+
+MAIN_URL="http://linux.dell.com/repo/hardware/latest/platform_independent/rh60_64"
+FIRMWARES_URL="$MAIN_URL/payloads"
+FIRMWARE_TOOLS_URL="$MAIN_URL/firmware-tools"
+IE_MODULES_URL="$MAIN_URL/ie_modules"
+
+# Package settings
+
+PKG_SUFFIX="deb0"
+
+# Path settings
+
+MAIN_PATH=/opt/lnxDellRepo2deb
+CONF_PATH=$MAIN_PATH/conf
+LIB_PATH=$MAIN_PATH/lib
+PKGS_PATH=$MAIN_PATH/packages
+WORK_PATH=$MAIN_PATH/tmp
+LOGS_PATH=$MAIN_PATH/logs
+SCRIPTS_PATH=$MAIN_PATH/mod_scripts
